@@ -3,6 +3,8 @@
 #include <SDL2/SDL_image.h>
 #include <iostream>
 #include <unistd.h>
+#include <curl/curl.h>
+#include <regex> 
 
 using std::cout;
 using std::endl;
@@ -15,11 +17,10 @@ const int screenHeight = 480;
 const int onScreen = 5;
 
 // Time between memes
-const int memeDelay = 15;
+const int memeDelay = 5;
 
 int width;
 int height;
-
 
 // Starts up SDL and creates window
 bool init();
@@ -29,6 +30,12 @@ std::string getMeme();
 
 // Loads media
 bool loadMedia();
+
+// curl something
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
+
+// Fetches meme url
+std::string meme_url_curl();
 
 // Displays the meme
 void display();
@@ -77,7 +84,36 @@ bool init() {
 }
 
 std::string getMeme() {
-    return "zero-two/zero-two-a.bmp";
+    return "meme.bmp";
+}
+
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+std::string meme_url_curl() {
+    
+    CURL *curl;
+    CURLcode res;
+    std::string readBuffer;
+
+    curl = curl_easy_init();
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, "https://meme-api.com/gimme/wholesomememes");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+    }
+
+    std::smatch m; 
+    // std::regex regexp("(.*?)");
+    std::regex regexp("(https:\\/\\/i.redd.it\\/)([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:\\/~+#-]*[\\w@?^=%&\\/~+#-])");
+    std::regex_search(readBuffer, m, regexp);
+    cout << m.str() << endl;
+    return m.str();
+
 }
 
 bool loadMedia() {
@@ -164,7 +200,25 @@ void display() {
 	quit();
 }
 
+void download_image(std::string url) {
+    CURL *curl;
+    CURLcode res;
+    std::string readBuffer;
+
+    curl = curl_easy_init();
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+    }
+    cout << readBuffer << endl;
+}
+
 int main( int argc, char* args[] ) {
+    download_image(meme_url_curl());
+    // system("curl  --output meme.jpg");
     while(1) {
 	    display();
         cout << "Meme displayed!" << endl;
