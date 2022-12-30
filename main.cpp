@@ -17,8 +17,15 @@ const int onScreen = 5;
 // Time between memes
 const int memeDelay = 15;
 
+int width;
+int height;
+
+
 // Starts up SDL and creates window
 bool init();
+
+// Gets the meme
+std::string getMeme();
 
 // Loads media
 bool loadMedia();
@@ -43,7 +50,7 @@ SDL_Window* gWindow = NULL;
 // The surface contained by the window
 SDL_Surface* gScreenSurface = NULL;
 
-//Current displayed image
+// Current displayed image
 SDL_Surface* gStretchedSurface = NULL;
 
 bool init() {
@@ -69,12 +76,16 @@ bool init() {
 	return success;
 }
 
+std::string getMeme() {
+    return "zero-two/zero-two-a.bmp";
+}
+
 bool loadMedia() {
 	//Loading success flag
 	bool success = true;
 
 	//Load stretching surface
-	gStretchedSurface = loadSurface( "zero-two/zero-two-a.bmp" );
+	gStretchedSurface = loadSurface( getMeme() );
 	if( gStretchedSurface == NULL ) {
 		cout << "Failed to load image!" << endl;
 		success = false;
