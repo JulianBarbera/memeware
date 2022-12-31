@@ -34,10 +34,10 @@ std::string get_meme();
 std::string pick_source();
 
 // Loads media
-bool loadMedia();
+bool load_media();
 
 // curl something
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
+static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp);
 
 // Fetches meme url
 std::string meme_url_curl();
@@ -54,7 +54,7 @@ void quit();
 unsigned sleep(unsigned seconds);
 
 // Loads individual image
-SDL_Surface* loadSurface( std::string path );
+SDL_Surface* load_surface( std::string path );
 
 // The window we'll be rendering to
 SDL_Window* gWindow = NULL;
@@ -70,13 +70,10 @@ bool init() {
     bool success = true;
 
     //Initialize SDL
-    if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-    {
+    if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
         success = false;
-    }
-    else
-    {
+    } else {
         //Create window
         gWindow = SDL_CreateWindow( "Memeware by Vinci", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
@@ -84,23 +81,18 @@ bool init() {
             cout << "Renderer could not be created! SDL_Error:\n" << SDL_GetError() << endl;
             success = false;
         }
-        else
-        {
+        else {
             //Initialize PNG loading
             int imgFlags = IMG_INIT_PNG;
-            if( !( IMG_Init( imgFlags ) & imgFlags ) )
-            {
+            if( !( IMG_Init( imgFlags ) & imgFlags ) ) {
                 cout << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError() << endl;
                 success = false;
-            }
-            else
-            {
+            } else {
                 //Get window surface
                 gScreenSurface = SDL_GetWindowSurface( gWindow );
             }
         }
     }
-
     return success;
 }
 
@@ -113,7 +105,7 @@ std::string get_meme() {
     dr = opendir("memes");
     if(dr!=NULL)
     {
-        cout<<"List of Files & Folders:-\n";
+        // cout<<"List of Files & Folders:-\n";
         int i = 0;
         for(d=readdir(dr); d!=NULL; d=readdir(dr))
         {
@@ -138,13 +130,11 @@ std::string get_meme() {
     std::advance(itr, ran_num);
 
     std::string itr1 = "memes/" +  *itr;
-	if (itr1 == "." || itr1 == "..") {
-		get_meme();
-	}
+	
 	return itr1;
 }
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
@@ -158,7 +148,7 @@ std::string meme_url_curl() {
     curl = curl_easy_init();
     if(curl) {
         curl_easy_setopt(curl, CURLOPT_URL, "https://meme-api.com/gimme/wholesomememes");
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
@@ -173,12 +163,12 @@ std::string meme_url_curl() {
 
 }
 
-bool loadMedia() {
+bool load_media() {
 	//Loading success flag
 	bool success = true;
 
 	//Load stretching surface
-	Surface = loadSurface( pick_source() );
+	Surface = load_surface( pick_source() );
 	if( Surface == NULL ) {
 		cout << "Failed to load image!" << endl;
 		success = false;
@@ -202,7 +192,7 @@ void quit() {
 	SDL_Quit();
 }
 
-SDL_Surface* loadSurface( std::string path )
+SDL_Surface* load_surface( std::string path )
 {
     //The final optimized image
     SDL_Surface* optimizedSurface = NULL;
@@ -233,11 +223,11 @@ void display() {
 		cout << "Failed to initialize!" << endl;
 	} else {
 		//Load media
-		if( !loadMedia() ) {
+		if( !load_media() ) {
 			cout << "Failed to load media!" << endl;
 		} else {	
 
-            // Apply the image stretched
+            // Apply the image
 			
 			SDL_BlitScaled( Surface, NULL, gScreenSurface, NULL );
 			
