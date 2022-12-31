@@ -58,33 +58,49 @@ SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 
 // Current displayed image
-SDL_Surface* gStretchedSurface = NULL;
+SDL_Surface* Surface = NULL;
 
 bool init() {
 	//Initialization flag
-	bool success = true;
+    bool success = true;
 
-	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
-		cout << "SDL could not initialize! SDL_Error:\n" << SDL_GetError() << endl;
-		success = false;
-	} else {
-		//Create window
-		gWindow = SDL_CreateWindow( "Memeware by Vinci", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_SHOWN );
-		if( gWindow == NULL ) {
-			cout << "Renderer could not be created! SDL_Error:\n" << SDL_GetError() << endl;
-			success = false;
-		} else {
-			//Get window surface
-			gScreenSurface = SDL_GetWindowSurface( gWindow );
-		}
-	}
+    //Initialize SDL
+    if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+    {
+        printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
+        success = false;
+    }
+    else
+    {
+        //Create window
+        gWindow = SDL_CreateWindow( "Memeware by Vinci", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_SHOWN );
+        if( gWindow == NULL )
+        {
+            cout << "Renderer could not be created! SDL_Error:\n" << SDL_GetError() << endl;
+            success = false;
+        }
+        else
+        {
+            //Initialize PNG loading
+            int imgFlags = IMG_INIT_PNG;
+            if( !( IMG_Init( imgFlags ) & imgFlags ) )
+            {
+                cout << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError() << endl;
+                success = false;
+            }
+            else
+            {
+                //Get window surface
+                gScreenSurface = SDL_GetWindowSurface( gWindow );
+            }
+        }
+    }
 
-	return success;
+    return success;
 }
 
 std::string getMeme() {
-    return "meme.bmp";
+    return "meme.jpg";
 }
 
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -121,8 +137,8 @@ bool loadMedia() {
 	bool success = true;
 
 	//Load stretching surface
-	gStretchedSurface = loadSurface( getMeme() );
-	if( gStretchedSurface == NULL ) {
+	Surface = loadSurface( getMeme() );
+	if( Surface == NULL ) {
 		cout << "Failed to load image!" << endl;
 		success = false;
 	}
@@ -132,8 +148,8 @@ bool loadMedia() {
 
 void close() {
     //Free loaded image
-	SDL_FreeSurface( gStretchedSurface );
-	gStretchedSurface = NULL;
+	SDL_FreeSurface( Surface );
+	Surface = NULL;
 
 	//Destroy window
 	SDL_DestroyWindow( gWindow );
@@ -145,27 +161,28 @@ void quit() {
 	SDL_Quit();
 }
 
-SDL_Surface* loadSurface( std::string path ) {
-	//The final optimized image
-	SDL_Surface* optimizedSurface = NULL;
+SDL_Surface* loadSurface( std::string path )
+{
+    //The final optimized image
+    SDL_Surface* optimizedSurface = NULL;
 
-	//Load image at specified path
-	SDL_Surface* loadedSurface = SDL_LoadBMP( path.c_str() );
-	if( loadedSurface == NULL ) {
-		cout << "Unable to load image!\n" << path.c_str() << endl << SDL_GetError() << endl;
-	} else {
-		//Convert surface to screen format
-		optimizedSurface = SDL_ConvertSurface( loadedSurface, gScreenSurface->format, 0 );
-		if( optimizedSurface == NULL )
-		{
-			cout << "Unable to load image!\n" << path.c_str() << endl << SDL_GetError() << endl;
-		}
+    //Load image at specified path
+    SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+    if( loadedSurface == NULL ) {
+        printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+    } else {
+        //Convert surface to screen format
+        optimizedSurface = SDL_ConvertSurface( loadedSurface, gScreenSurface->format, 0 );
+        if( optimizedSurface == NULL )
+        {
+            printf( "Unable to optimize image %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
+        }
 
-		//Get rid of old loaded surface
-		SDL_FreeSurface( loadedSurface );
-	}
+        //Get rid of old loaded surface
+        SDL_FreeSurface( loadedSurface );
+    }
 
-	return optimizedSurface;
+    return optimizedSurface;
 }
 
 void display() {
@@ -179,13 +196,9 @@ void display() {
 			cout << "Failed to load media!" << endl;
 		} else {	
 
-            //Apply the image stretched
-			SDL_Rect stretchRect;
-			stretchRect.x = 0;
-			stretchRect.y = 0;
-			stretchRect.w = screenWidth;
-			stretchRect.h = screenHeight;
-			SDL_BlitScaled( gStretchedSurface, NULL, gScreenSurface, &stretchRect );
+            // Apply the image stretched
+			
+			SDL_BlitScaled( Surface, NULL, gScreenSurface, NULL );
 			
 			//Update the surface
 			SDL_UpdateWindowSurface( gWindow );
@@ -200,26 +213,10 @@ void display() {
 	quit();
 }
 
-void download_image(std::string url) {
-    CURL *curl;
-    CURLcode res;
-    std::string readBuffer;
-
-    curl = curl_easy_init();
-    if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-    }
-    cout << readBuffer << endl;
-}
-
 int main( int argc, char* args[] ) {
-    download_image(meme_url_curl());
-    // system("curl  --output meme.jpg");
     while(1) {
+		std::string curl_command = "curl " + meme_url_curl() + " --output meme.jpg";
+    	system(curl_command.c_str());
 	    display();
         cout << "Meme displayed!" << endl;
         sleep(memeDelay);
