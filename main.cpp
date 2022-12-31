@@ -4,7 +4,10 @@
 #include <iostream>
 #include <unistd.h>
 #include <curl/curl.h>
-#include <regex> 
+#include <regex>
+#include <list>
+#include <iterator>
+#include <dirent.h>
 
 using std::cout;
 using std::endl;
@@ -26,7 +29,9 @@ int height;
 bool init();
 
 // Gets the meme
-std::string getMeme();
+std::string get_meme();
+
+std::string pick_source();
 
 // Loads media
 bool loadMedia();
@@ -99,8 +104,44 @@ bool init() {
     return success;
 }
 
-std::string getMeme() {
-    return "meme.jpg";
+
+std::string get_meme() {
+    std::list<std::string> path;
+
+    struct dirent *d;
+    DIR *dr;
+    dr = opendir("memes");
+    if(dr!=NULL)
+    {
+        cout<<"List of Files & Folders:-\n";
+        int i = 0;
+        for(d=readdir(dr); d!=NULL; d=readdir(dr))
+        {
+			// cout << i << endl;
+            // cout<<d->d_name<<endl;
+            i++;
+            std::string path_n = d->d_name;
+            std::list<std::string>::iterator it = path.begin();
+            std::advance(it, i);
+            path.insert(it,path_n);
+        }
+        closedir(dr);
+    }
+
+    int size = path.size();
+	srand(time(NULL));
+    int ran_num = rand() % size + 0 ;
+	// cout << ran_num << endl;
+
+    std::list<std::string>::iterator itr = path.begin();
+
+    std::advance(itr, ran_num);
+
+    std::string itr1 = "memes/" +  *itr;
+	if (itr1 == "." || itr1 == "..") {
+		get_meme();
+	}
+	return itr1;
 }
 
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -137,7 +178,7 @@ bool loadMedia() {
 	bool success = true;
 
 	//Load stretching surface
-	Surface = loadSurface( getMeme() );
+	Surface = loadSurface( pick_source() );
 	if( Surface == NULL ) {
 		cout << "Failed to load image!" << endl;
 		success = false;
@@ -211,6 +252,14 @@ void display() {
 	//Free resources and quit SDL
     close();
 	quit();
+}
+
+std::string pick_source() {
+	srand(time(NULL));
+	std::string online = "meme.jpg";
+	std::string local = get_meme();
+	std::string source = rand() % 2 > 0 ? online : local;
+	return source;
 }
 
 int main( int argc, char* args[] ) {
